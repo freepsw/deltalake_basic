@@ -97,7 +97,7 @@ total 4.0K
 ```
 - 아래와 같은 json 데이터가 확인됨
 ```json
-# deltalake reader & writer protocol version 확인
+# 1. deltalake reader & writer protocol version 확인
 {
   "protocol": {
     "minReaderVersion": 1,
@@ -105,7 +105,8 @@ total 4.0K
   }
 }
 
-# 
+# 2. Deltalake Table에 대한 메타 정보 제공
+## Schema, partition column, file format, config 설정 등
 {
   "metaData": {
     "id": "c84497c6-c420-41e8-8257-19210ebcba5c",
@@ -122,6 +123,9 @@ total 4.0K
   }
 }
 
+# 3. 현재 파일이 어떻게 생성되었는지 명시
+## add는 데이터가 추가되면서 parquet 파일이 생성되었음을 의미함. 
+## stats에서 현재 parquet 파일에 대한 통계정보 제공 (향후 데이터 조회시 성능 향상)
 {
   "add": {
     "path": "0-7e5ed444-9c1c-4076-8f08-b913494acd91-0.parquet",
@@ -138,6 +142,7 @@ total 4.0K
   }
 }
 
+# 4. 파일이 Commit 되는 시점에 대한 상세 정보
 {
   "commitInfo": {
     "timestamp": 1720439642288,
