@@ -9,6 +9,7 @@
 > cd ~
 > mkdir ~/deltalake_test
 > cd ~/deltalake_test
+
 > python3 -m venv delta_virtualenv
 > source delta_virtualenv/bin/activate
 (delta_virtualenv) [fre@instance-20240707-225918 deltalake_test]$
@@ -158,3 +159,176 @@ total 4.0K
 }
 ```
 
+### Test example code
+```
+> cd ~
+> sudo dnf install -y git
+> git clone https://github.com/freepsw/deltalake_basic.git
+> cd deltalake_basic/
+
+# Create virtual env 
+> python3 -m venv delta_virtualenv
+> source delta_virtualenv/bin/activate
+(delta_virtualenv) > pip install deltalake
+(delta_virtualenv) > pip install pandas
+
+> ls delta_basic/
+0_create_delta.py   2_load_delta.py    4_overwrite_delta.py   6_history_delta.py
+1_check_parquet.py  3_append_delta.py  5_timetravel_delta.py  7_delete_delta.py
+
+> cd delta_basic/
+```
+
+#### 0. Create Delta Table
+```
+> python 0_create_delta.py
+   num letter
+0    1      a
+1    2      b
+2    3      c
+
+> ls -alh my-delta-table
+total 8.0K
+drwxr-xr-x. 3 freepsw18 freepsw18   80 Jul  9 11:31 .
+drwxr-xr-x. 3 freepsw18 freepsw18 4.0K Jul  9 11:31 ..
+-rw-r--r--. 1 freepsw18 freepsw18  870 Jul  9 11:31 0-eb941cae-b8a8-47ec-bd63-8e16db41bbca-0.parquet
+drwxr-xr-x. 2 freepsw18 freepsw18   39 Jul  9 11:31 _delta_log
+
+> ls -alh my-delta-table/_delta_log/
+total 4.0K
+drwxr-xr-x. 2 freepsw18 freepsw18   39 Jul  9 11:31 .
+drwxr-xr-x. 3 freepsw18 freepsw18   80 Jul  9 11:31 ..
+-rw-r--r--. 1 freepsw18 freepsw18 1.7K Jul  9 11:31 00000000000000000000.json
+```
+
+#### 2. Load delta table
+```
+> python 2_load_delta.py
+Version: 0
+Files: ['0-eb941cae-b8a8-47ec-bd63-8e16db41bbca-0.parquet']
+```
+
+#### 3. Insert(append) data into delta table
+```
+> python 3_append_delta.py
+   num letter
+0    8     dd
+1    9     ee
+2    1      a
+3    2      b
+4    3      c
+```
+
+#### 4. Overwrite data to delta table
+- 기존 데이터를 삭제하고, 새로운 데이터만 입력
+```
+> python 4_overwrite_delta.py
+   num letter
+0   11     aa
+1   22     bb
+
+> ls -alh my-delta-table
+total 16K
+drwxr-xr-x. 3 freepsw18 freepsw18  192 Jul  9 11:36 .
+drwxr-xr-x. 3 freepsw18 freepsw18 4.0K Jul  9 11:31 ..
+-rw-r--r--. 1 freepsw18 freepsw18  870 Jul  9 11:31 0-eb941cae-b8a8-47ec-bd63-8e16db41bbca-0.parquet
+-rw-r--r--. 1 freepsw18 freepsw18  866 Jul  9 11:35 1-0ed14766-e3d7-4f75-9f0d-ee7a714dd777-0.parquet
+-rw-r--r--. 1 freepsw18 freepsw18  866 Jul  9 11:36 2-125f2788-bfad-46ce-aae8-90df04c7b03c-0.parquet
+drwxr-xr-x. 2 freepsw18 freepsw18  105 Jul  9 11:36 _delta_log
+
+> ls -alh my-delta-table/_delta_log/
+total 12K
+drwxr-xr-x. 2 freepsw18 freepsw18  105 Jul  9 11:36 .
+drwxr-xr-x. 3 freepsw18 freepsw18  192 Jul  9 11:36 ..
+-rw-r--r--. 1 freepsw18 freepsw18 1.7K Jul  9 11:31 00000000000000000000.json
+-rw-r--r--. 1 freepsw18 freepsw18  586 Jul  9 11:35 00000000000000000001.json
+-rw-r--r--. 1 freepsw18 freepsw18  957 Jul  9 11:36 00000000000000000002.json
+```
+
+
+#### 5. Time travel 
+- 초기 버전(version 1)의 데이터로 복구(time travel)
+- Append가 실행된 시점의 데이터로 복구
+```
+> python 5_timetravel_delta.py
+   num letter
+0    8     dd
+1    9     ee
+2    1      a
+3    2      b
+4    3      c
+
+# Time travel을 하는 경우, 
+# 해당 버전의 데이터만 조회했기 때문에 별도의 parquet파일이 생성되거나
+# _delta_log 파일에 json이 추가되지 않는다. 
+
+> ls -alh my-delta-table
+total 16K
+drwxr-xr-x. 3 freepsw18 freepsw18  192 Jul  9 11:36 .
+drwxr-xr-x. 3 freepsw18 freepsw18 4.0K Jul  9 11:31 ..
+-rw-r--r--. 1 freepsw18 freepsw18  870 Jul  9 11:31 0-eb941cae-b8a8-47ec-bd63-8e16db41bbca-0.parquet
+-rw-r--r--. 1 freepsw18 freepsw18  866 Jul  9 11:35 1-0ed14766-e3d7-4f75-9f0d-ee7a714dd777-0.parquet
+-rw-r--r--. 1 freepsw18 freepsw18  866 Jul  9 11:36 2-125f2788-bfad-46ce-aae8-90df04c7b03c-0.parquet
+drwxr-xr-x. 2 freepsw18 freepsw18  105 Jul  9 11:36 _delta_log
+
+> ls -alh my-delta-table/_delta_log/
+total 12K
+drwxr-xr-x. 2 freepsw18 freepsw18  105 Jul  9 11:36 .
+drwxr-xr-x. 3 freepsw18 freepsw18  192 Jul  9 11:36 ..
+-rw-r--r--. 1 freepsw18 freepsw18 1.7K Jul  9 11:31 00000000000000000000.json
+-rw-r--r--. 1 freepsw18 freepsw18  586 Jul  9 11:35 00000000000000000001.json
+-rw-r--r--. 1 freepsw18 freepsw18  957 Jul  9 11:36 00000000000000000002.json
+```
+
+#### 6. Get table history
+- Delta table의 모든 이력(history)를 읽어와서 출력한다.
+```
+> python 6_history_delta.py
+```
+- 아래와 같이 json 포맷으로 확인 가능
+```json
+{
+  "timestamp": 1720524963628,
+  "operation": "WRITE",
+  "operationParameters": {
+    "mode": "Overwrite",
+    "partitionBy": "[]"
+  },
+  "clientVersion": "delta-rs.0.18.1",
+  "version": 2
+}
+{
+  "timestamp": 1720524904029,
+  "operation": "WRITE",
+  "operationParameters": {
+    "partitionBy": "[]",
+    "mode": "Append"
+  },
+  "clientVersion": "delta-rs.0.18.1",
+  "version": 1
+}
+{
+  "timestamp": 1720524711396,
+  "operation": "CREATE TABLE",
+  "operationParameters": {
+    "protocol": "{\"minReaderVersion\":1,\"minWriterVersion\":2}",
+    "mode": "ErrorIfExists",
+    "location": "file:///home/freepsw18/deltalake_basic/delta_basic/my-delta-table",
+    "metadata": "{\"configuration\":{},\"createdTime\":1720524711396,\"description\":null,\"format\":{\"options\":{},\"provider\":\"parquet\"},\"id\":\"6ef76d94-ce63-4ba6-8266-598a81a2d937\",\"name\":null,\"partitionColumns\":[],\"schemaString\":\"{\\\"type\\\":\\\"struct\\\",\\\"fields\\\":[{\\\"name\\\":\\\"num\\\",\\\"type\\\":\\\"long\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}},{\\\"name\\\":\\\"letter\\\",\\\"type\\\":\\\"string\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}}]}\"}"
+  },
+  "clientVersion": "delta-rs.0.18.1",
+  "version": 0
+}
+```
+
+#### 7. Delete record from delta table.
+- Delta table의 일부 레코드를 삭제한다. (num 칼럼이 8보다 큰 레코드 삭제)
+```
+> python 7_delete_delta.py
+{'num_added_files': 1, 'num_removed_files': 1, 'num_deleted_rows': 1, 'num_copied_rows': 1, 'execution_time_ms': 3, 'scan_time_ms': 1, 'rewrite_time_ms': 1}
+   num letter
+0    8     dd
+1    1      a
+2    2      b
+3    3      c
+```
