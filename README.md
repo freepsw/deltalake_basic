@@ -325,10 +325,9 @@ drwxr-xr-x. 3 freepsw18 freepsw18  192 Jul  9 11:36 ..
 - Delta table의 일부 레코드를 삭제한다. (num 칼럼이 8보다 큰 레코드 삭제)
 ```
 > python 7_delete_delta.py
-{'num_added_files': 1, 'num_removed_files': 1, 'num_deleted_rows': 1, 'num_copied_rows': 1, 'execution_time_ms': 3, 'scan_time_ms': 1, 'rewrite_time_ms': 1}
-   num letter
-0    8     dd
-1    1      a
-2    2      b
-3    3      c
+{'num_added_files': 0, 'num_removed_files': 1, 'num_deleted_rows': 2, 'num_copied_rows': 0, 'execution_time_ms': 84, 'scan_time_ms': 79, 'rewrite_time_ms': 4}
+Empty DataFrame
+Columns: [num, letter]
+Index: []
+
 ```
